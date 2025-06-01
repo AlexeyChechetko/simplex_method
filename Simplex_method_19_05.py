@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from shapely.geometry import Polygon
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+# TODO: перевести ситсему ограничений в ограничения типа равенства
+
 class LPVisualizer:
     def __init__(self, root):
         self.root = root
