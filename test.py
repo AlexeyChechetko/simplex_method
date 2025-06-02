@@ -231,14 +231,18 @@ class LPVisualizer:
 
         plt.imshow( intersect.astype(int) , extent=(x_grid.min(),x_grid.max(),y_grid.min(),y_grid.max()),origin="lower", cmap="Greys", alpha = 0.3)        
         #draw obj line 
-        
         obj_coeffs = [v.get() for v in self.objective_coeffs]
+
         if self.current_point:
+
+            full_point = list(self.current_point) + [vk.get() for vk in self.fixed_values]
+            z = sum(c * x for c, x in zip(obj_coeffs, full_point))
+
             if  abs(obj_coeffs[1]) > 1e-8:
-                y_obj = (self.current_point[0] * obj_coeffs[0] + self.current_point[1] * obj_coeffs[1] - obj_coeffs[0] * x)/obj_coeffs[1]
+                y_obj = (z - obj_coeffs[0] * x)/obj_coeffs[1]
                 self.ax.plot(x, y_obj, color= 'r')
             elif abs(obj_coeffs[0]) > 1e-8:
-                x_obj = (self.current_point[0] * obj_coeffs[0] + self.current_point[1] * obj_coeffs[1])/obj_coeffs[0]
+                x_obj = (z)/obj_coeffs[0]
                 self.ax.axvline(x = x_obj,ymin = y_min,  ymax = y_max , color = 'r')
 
         # search interseption points
@@ -302,66 +306,58 @@ class LPVisualizer:
     def start_manual_mode(self):
         self.manual_mode = True
         self.plot_constraints()
-        if not self.vertices:
-            self.info_label.config(text="Нет допустимых вершин")
-            return
-            
-        if len(self.vertices) == 1:
+
+        obj_coeffs = [v.get() for v in self.objective_coeffs]
+
+        self.z_obj = 0
+        if self.vertices:
+            full_point = list(self.vertices[0]) + [vk.get() for vk in self.fixed_values]
+            self.z_obj = sum(c * x for c, x in zip(obj_coeffs, full_point))
             self.current_point = self.vertices[0]
-            full_point = list(self.current_point) + [vk.get() for vk in self.fixed_values]
-            z = sum(c.get() * x for c, x in zip(self.objective_coeffs, full_point))
-            point_str = ", ".join(f"{x:.2f}" for x in full_point)
-            self.info_label.config(text=f"x = ({point_str})\nЦелевая функция = {z:.2f}")
-            self.plot_constraints()
-            return
-            
-        if len(self.vertices) == 2:
-            self.edge_path = self.vertices
-            self.edge_index = 0
-            self.current_point = self.edge_path[0]
-            self.update_info()
-            self.plot_constraints()
-            return
-            
-        poly = Polygon(self.vertices)
-        if not poly.is_valid:
-            poly = poly.convex_hull
-        self.edge_path = list(poly.exterior.coords)[:-1]
-        self.edge_index = 0
-        self.current_point = self.edge_path[0]
+        
         self.update_info()
         self.plot_constraints()   
 
 
     def move_up(self, event):
         if self.manual_mode:
-            self.move_along_edge(1)
+            self.move_line(1)
 
     def move_down(self, event):
         if self.manual_mode:
-            self.move_along_edge(-1)
+            self.move_line(-1)
 
-    def move_along_edge(self, direction):
-        if not self.edge_path or self.current_point is None:
-            return
-        step = self.step_size.get()
-        p1 = np.array(self.current_point)
-        next_idx = (self.edge_index + direction) % len(self.edge_path)
-        p2 = np.array(self.edge_path[next_idx])
-        edge_vector = p2 - p1
-        length = np.linalg.norm(edge_vector)
-        if length < 1e-8:
-            return
-        dir_vector = edge_vector / length
-        new_point = p1 + dir_vector * step
-        if np.linalg.norm(new_point - p2) < step:
-            self.edge_index = next_idx
-            new_point = p2
-        full_point = list(new_point) + [vk.get() for vk in self.fixed_values]
-        if self.is_feasible(full_point):
-            self.current_point = tuple(new_point)
-            self.update_info()
-            self.plot_constraints()    
+    def move_line(self, dir):        
+        self.z_obj = self.z_obj + dir* self.step_size.get()
+        obj_coeffs = [v.get() for v in self.objective_coeffs]
+        constraints = self.read_constraints()
+        interseptions = []
+
+        for constr in constraints:
+            a_coefs, _ , b_coef = constr 
+
+            A = np.array([a_coefs[:2], obj_coeffs[:2]])
+            rhs1 = b_coef - sum(ak * vk.get() for ak, vk in zip(a_coefs[2:], self.fixed_values))
+            rhs2 = self.z_obj - sum(ak * vk.get() for ak, vk in zip(obj_coeffs[2:], self.fixed_values))
+            b_vec = np.array([rhs1, rhs2])
+            if np.linalg.matrix_rank(A) == 2:
+                try:
+                    sol = np.linalg.solve(A, b_vec)
+                    full_point = list(sol) + [vk.get() for vk in self.fixed_values]
+                    if self.is_feasible(full_point):
+                        interseptions.append( (sum(c * x for c, x in zip(obj_coeffs, full_point)),  tuple(sol)) )
+                except Exception:
+                    pass
+        
+        if interseptions:
+            self.current_point = max(interseptions)[1] if self.mode.get() == "Максимум" else min(interseptions)[1]
+        else:
+            self.z_obj = self.z_obj - dir* self.step_size.get()
+              
+        
+        self.update_info()
+        self.plot_constraints()   
+
 
 
     def update_info(self):
