@@ -241,10 +241,6 @@ class LPVisualizer:
                 x_obj = (self.current_point[0] * obj_coeffs[0] + self.current_point[1] * obj_coeffs[1])/obj_coeffs[0]
                 self.ax.axvline(x = x_obj,ymin = y_min,  ymax = y_max , color = 'r')
 
-
-       
-
-
         # search interseption points
         for comb in itertools.combinations(constraints, 2):
             a_coefs1, _ , b_coef1 = comb[0] 
