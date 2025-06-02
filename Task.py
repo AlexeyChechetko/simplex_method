@@ -1,5 +1,4 @@
 import numpy as np
-
 from constraint import Constraint
 from system_of_constraints import SystemOfConstraints
 
@@ -9,20 +8,10 @@ class Task:
     c: list[float] # Список коэффициентов целевой функции
     system_of_constraints: SystemOfConstraints # Система ограничений
 
-    def __init__(self):
-        pass
-
-    def make_task(self):
-        """
-
-        """
-        pass
-
-    def check_constraint(self, constraint: Constraint):
-        """
-        Проверяет, имеет ли ограничение вид типа (-1)*x_i <= 0
-        """
-        pass
+    def __init__(self, number_of_variables: int, c: list[float], constraints: list[Constraint]):
+        self.number_of_variables = number_of_variables
+        self.c = c
+        self.system_of_constraints = SystemOfConstraints(constraints)
 
 def make_task_canonical(task: Task) -> Task:
     """
