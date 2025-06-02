@@ -98,6 +98,7 @@ class LPVisualizer:
             ttk.Button(control_frame, text="Обновить график", command=self.plot_constraints).pack(fill=tk.X, pady=2)
             ttk.Button(control_frame, text="Автоматический расчёт", command=self.solve).pack(fill=tk.X, pady=2)
             ttk.Button(control_frame, text="Ручной расчёт", command=self.start_manual_mode).pack(fill=tk.X, pady=2)
+            self.interseptions = []
         else:
             ttk.Button(control_frame, text="Решить задачу", command=self.solve_analytical).pack(fill=tk.X, pady=2)
             
@@ -244,6 +245,11 @@ class LPVisualizer:
             elif abs(obj_coeffs[0]) > 1e-8:
                 x_obj = (z)/obj_coeffs[0]
                 self.ax.axvline(x = x_obj,ymin = y_min,  ymax = y_max , color = 'r')
+        #draw intersections for manual sol
+        for point in self.interseptions:
+            if point[1] != self.current_point:
+                self.ax.plot(point[1][0], point[1][1], color = 'purple', marker ='o')
+                self.ax.text(point[1][0] + 0.03, point[1][1] + 0.03, f"({point[1][0]:.1f}, {point[1][0]:.1f}, {point[0]:.1f})", fontsize=8)
 
         # search interseption points
         for comb in itertools.combinations(constraints, 2):
@@ -304,6 +310,7 @@ class LPVisualizer:
         self.plot_constraints() 
 
     def start_manual_mode(self):
+
         self.manual_mode = True
         self.plot_constraints()
 
@@ -315,6 +322,7 @@ class LPVisualizer:
             self.z_obj = sum(c * x for c, x in zip(obj_coeffs, full_point))
             self.current_point = self.vertices[0]
         
+
         self.update_info()
         self.plot_constraints()   
 
@@ -331,7 +339,7 @@ class LPVisualizer:
         self.z_obj = self.z_obj + dir* self.step_size.get()
         obj_coeffs = [v.get() for v in self.objective_coeffs]
         constraints = self.read_constraints()
-        interseptions = []
+        self.interseptions = []
 
         for constr in constraints:
             a_coefs, _ , b_coef = constr 
@@ -345,19 +353,17 @@ class LPVisualizer:
                     sol = np.linalg.solve(A, b_vec)
                     full_point = list(sol) + [vk.get() for vk in self.fixed_values]
                     if self.is_feasible(full_point):
-                        interseptions.append( (sum(c * x for c, x in zip(obj_coeffs, full_point)),  tuple(sol)) )
+                        self.interseptions.append( (sum(c * x for c, x in zip(obj_coeffs, full_point)),  tuple(sol)) )
                 except Exception:
                     pass
         
-        if interseptions:
-            self.current_point = max(interseptions)[1] if self.mode.get() == "Максимум" else min(interseptions)[1]
+        if self.interseptions:
+            self.current_point = max(self.interseptions)[1] if self.mode.get() == "Максимум" else min(self.interseptions)[1]
         else:
             self.z_obj = self.z_obj - dir* self.step_size.get()
-              
         
         self.update_info()
         self.plot_constraints()   
-
 
 
     def update_info(self):
