@@ -1,6 +1,5 @@
 class Constraint:
 
-    number_of_variables: int # Число переменных
     coefficients: list[float] # Коэффициенты при переменных
     b: float # Правая часть ограничения
     type_of_ineq: str # Тип неравенства
@@ -11,7 +10,6 @@ class Constraint:
         :param b: правая часть ограничения
         :param type_of_ineq: ">=", "<=", "="
         """
-        self.number_of_variables = len(coefficients)
         self.coefficients = coefficients
         self.b = b
         self.type_of_ineq = type_of_ineq
@@ -28,7 +26,21 @@ class Constraint:
             self.b = -self.b
             self.type_of_ineq = "<="
 
+    def check_constraint(self) -> int:
+        """
+        Проверяет - имеет ли данное неравенство тип (-1)*x_i <= 0.
+        """
+        non_zero_indices = [i for i, x in enumerate(self.coefficients) if x != 0]
+        if (len(non_zero_indices) == 1) and (self.coefficients[non_zero_indices[0]] < 0) and (self.b == 0):
+            return non_zero_indices[0]
+        else:
+            return -1
+
     def __repr__(self):
+        """
+        Выводит преобразованное ограничение в формате (1)*x1 + (0)*x2 + (-3)*x3 <= 4
+        :return: строка ограничения
+        """
         str_constraint = ""
 
         for i, coefficient in enumerate(self.coefficients):
@@ -40,12 +52,22 @@ class Constraint:
         return str_constraint
 
 if __name__ == "__main__":
-    coefficients_ex = [1, 0, -3]
-    b_ex = 4
-    type_of_ineq_ex = "<="
+    # Пример 1
+    coefficients_ex1 = [1, 0, -3]
+    b_ex1 = 4
+    type_of_ineq_ex1 = "<="
 
-    Constraint_instance = Constraint(coefficients_ex, b_ex, type_of_ineq_ex)
-    print(Constraint_instance)
+    Constraint_instance1 = Constraint(coefficients_ex1, b_ex1, type_of_ineq_ex1)
+    print(Constraint_instance1)
+    print(Constraint_instance1.check_constraint())
 
+    # Пример 2
+    coefficients_ex2 = [0, 0, -3]
+    b_ex2 = 0
+    type_of_ineq_ex2 = "<="
+
+    Constraint_instance2 = Constraint(coefficients_ex2, b_ex2, type_of_ineq_ex2)
+    print(Constraint_instance2)
+    print(Constraint_instance2.check_constraint())
 
 
