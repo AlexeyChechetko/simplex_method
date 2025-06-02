@@ -102,7 +102,7 @@ class LPVisualizer:
             ttk.Button(control_frame, text="Решить задачу", command=self.solve_analytical).pack(fill=tk.X, pady=2)
             
         ttk.Button(control_frame, text="Сбросить всё", command=self.reset_all).pack(fill=tk.X, pady=2)
-        #ttk.Button(control_frame, text="Новая задача", command=self.new_problem).pack(fill=tk.X, pady=2)
+        ttk.Button(control_frame, text="Новая задача", command=self.new_problem).pack(fill=tk.X, pady=2)
 
         if self.visualization_mode:
             self.fig, self.ax = plt.subplots()
@@ -115,8 +115,8 @@ class LPVisualizer:
             self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
             self.fig.canvas.mpl_connect("scroll_event", self.on_scroll)
             
-            #self.root.bind("<Up>", self.move_up)
-            #self.root.bind("<Down>", self.move_down)
+            self.root.bind("<Up>", self.move_up)
+            self.root.bind("<Down>", self.move_down)
 
     def update_objective_entries(self):
         for widget in self.objective_container.winfo_children():
@@ -234,8 +234,14 @@ class LPVisualizer:
         
         obj_coeffs = [v.get() for v in self.objective_coeffs]
         if self.current_point:
-            y_obj = (self.current_point[0] * obj_coeffs[0] + self.current_point[1] * obj_coeffs[1] - obj_coeffs[0] * x)/obj_coeffs[1]
-            self.ax.plot(x, y_obj, color= 'r')
+            if  abs(obj_coeffs[1]) > 1e-8:
+                y_obj = (self.current_point[0] * obj_coeffs[0] + self.current_point[1] * obj_coeffs[1] - obj_coeffs[0] * x)/obj_coeffs[1]
+                self.ax.plot(x, y_obj, color= 'r')
+            elif abs(obj_coeffs[0]) > 1e-8:
+                x_obj = (self.current_point[0] * obj_coeffs[0] + self.current_point[1] * obj_coeffs[1])/obj_coeffs[0]
+                self.ax.axvline(x = x_obj,ymin = y_min,  ymax = y_max , color = 'r')
+
+
        
 
 
@@ -328,7 +334,39 @@ class LPVisualizer:
         self.edge_index = 0
         self.current_point = self.edge_path[0]
         self.update_info()
-        self.plot_constraints()    
+        self.plot_constraints()   
+
+
+    def move_up(self, event):
+        if self.manual_mode:
+            self.move_along_edge(1)
+
+    def move_down(self, event):
+        if self.manual_mode:
+            self.move_along_edge(-1)
+
+    def move_along_edge(self, direction):
+        if not self.edge_path or self.current_point is None:
+            return
+        step = self.step_size.get()
+        p1 = np.array(self.current_point)
+        next_idx = (self.edge_index + direction) % len(self.edge_path)
+        p2 = np.array(self.edge_path[next_idx])
+        edge_vector = p2 - p1
+        length = np.linalg.norm(edge_vector)
+        if length < 1e-8:
+            return
+        dir_vector = edge_vector / length
+        new_point = p1 + dir_vector * step
+        if np.linalg.norm(new_point - p2) < step:
+            self.edge_index = next_idx
+            new_point = p2
+        full_point = list(new_point) + [vk.get() for vk in self.fixed_values]
+        if self.is_feasible(full_point):
+            self.current_point = tuple(new_point)
+            self.update_info()
+            self.plot_constraints()    
+
 
     def update_info(self):
         if not self.current_point:
