@@ -38,11 +38,11 @@ class LPVisualizer:
         self.main_frame.pack(fill=tk.BOTH, expand=True)
         
         self.input_frame = ttk.Frame(self.main_frame, borderwidth = 1, relief =  "solid")
-        self.input_frame.place( relx=0.78, rely=0.05, relwidth=0.2, relheight=0.9)
+        self.input_frame.place( relx=0.71, rely=0.005, relwidth=0.287, relheight=0.987)
         
         if self.visualization_mode:
             self.plot_frame = ttk.Frame(self.main_frame,borderwidth = 1, relief =  "solid")
-            self.plot_frame.place( relx=0.05, rely=0.05, relwidth=0.7, relheight=0.9)
+            self.plot_frame.place( relx=0.005, rely=0.005, relwidth=0.7, relheight=0.987)
         
         self.extra_var_count = tk.IntVar(value=0)
         self.step_size = tk.DoubleVar(value=0.5)
@@ -58,7 +58,7 @@ class LPVisualizer:
         self.fixed_values = []
         
         self.setup_ui()
-        #self.update_objective_entries()
+        self.update_objective_entries() 
 
     def setup_ui(self):
         title_text = "Графическое решение" if self.visualization_mode else "Аналитическое решение"
@@ -69,8 +69,8 @@ class LPVisualizer:
         self.objective_container = ttk.Frame(objective_frame,borderwidth = 1, relief =  "solid")
         self.objective_container.pack()
         
-        mode_frame = ttk.Frame(objective_frame,borderwidth = 1, relief =  "solid")
-        ttk.Label(mode_frame , text="Целевая функция", font=("Arial", 12)).pack(pady=10)
+        mode_frame = ttk.Frame(objective_frame)
+        #ttk.Label(mode_frame , text="Целевая функция", font=("Arial", 12)).pack(pady=10)
         mode_frame.pack(pady=5)
         ttk.Radiobutton(mode_frame, text="Максимум", variable=self.mode, value="Максимум").pack(side=tk.LEFT)
         ttk.Radiobutton(mode_frame, text="Минимум", variable=self.mode, value="Минимум").pack(side=tk.LEFT)
@@ -96,8 +96,8 @@ class LPVisualizer:
         
         if self.visualization_mode:
             ttk.Button(control_frame, text="Обновить график", command=self.plot_constraints).pack(fill=tk.X, pady=2)
-            #ttk.Button(control_frame, text="Автоматический расчёт", command=self.solve).pack(fill=tk.X, pady=2)
-            #ttk.Button(control_frame, text="Ручной расчёт", command=self.start_manual_mode).pack(fill=tk.X, pady=2)
+            ttk.Button(control_frame, text="Автоматический расчёт", command=self.solve).pack(fill=tk.X, pady=2)
+            ttk.Button(control_frame, text="Ручной расчёт", command=self.start_manual_mode).pack(fill=tk.X, pady=2)
         else:
             ttk.Button(control_frame, text="Решить задачу", command=self.solve_analytical).pack(fill=tk.X, pady=2)
             
@@ -118,6 +118,46 @@ class LPVisualizer:
             #self.root.bind("<Up>", self.move_up)
             #self.root.bind("<Down>", self.move_down)
 
+    def update_objective_entries(self):
+        for widget in self.objective_container.winfo_children():
+            widget.destroy()
+
+        if hasattr(self, 'fixed_container'):
+            for widget in self.fixed_container.winfo_children():
+                widget.destroy()
+            self.fixed_container.destroy()
+            self.fixed_container = None
+
+        if self.visualization_mode and self.var_count > 2:
+            if not hasattr(self, 'fixed_frame'):
+                self.fixed_frame = ttk.LabelFrame(self.input_frame, text="Фиксируемые переменные")
+                self.fixed_frame.pack(fill=tk.X, padx=5, pady=5)
+            self.fixed_container = ttk.Frame(self.fixed_frame)
+            self.fixed_container.pack()
+
+        total_vars = self.var_count
+        self.objective_coeffs = []
+        self.fixed_values = []
+
+        for i in range(total_vars):
+            coeff = tk.DoubleVar()
+            self.objective_coeffs.append(coeff)
+            ttk.Entry(self.objective_container, textvariable=coeff, width=5).pack(side=tk.LEFT)
+            if i < total_vars - 1:
+                ttk.Label(self.objective_container, text=f"* x{i+1} +").pack(side=tk.LEFT)
+            else:
+                ttk.Label(self.objective_container, text=f"* x{i+1}").pack(side=tk.LEFT)
+
+        if self.visualization_mode and total_vars > 2:
+            for i in range(2, total_vars):
+                frame = ttk.Frame(self.fixed_container)
+                frame.pack(fill=tk.X, pady=2)
+                val = tk.DoubleVar()
+                self.fixed_values.append(val)
+                ttk.Label(frame, text=f"x{i+1} = ").pack(side=tk.LEFT)
+                ttk.Entry(frame, textvariable=val, width=8).pack(side=tk.LEFT)
+
+
     def add_constraint(self):
         frame = ttk.Frame(self.constraints_container)
         frame.pack(fill=tk.X, pady=2)
@@ -135,24 +175,11 @@ class LPVisualizer:
         ttk.Button(frame, text="X", command=lambda: self.remove_constraint(frame)).pack(side=tk.LEFT, padx=5)
         self.constraints_widgets.append((frame, coeffs, sign, b))
 
+
     def remove_constraint(self, frame):
         frame.destroy()
         self.constraints_widgets = [c for c in self.constraints_widgets if c[0] != frame]    
 
-    def reset_all(self):
-        for frame, *_ in self.constraints_widgets:
-            frame.destroy()
-        self.constraints_widgets.clear()
-
-        self.extra_var_count.set(0)
-        self.update_objective_entries()
-
-        self.vertices.clear()
-        self.current_point = None
-        self.manual_mode = False
-        self.edge_path.clear()
-        self.info_label.config(text="Решение не найдено")
-        self.plot_constraints()   
 
     def read_constraints(self):
         constraints = []
@@ -179,8 +206,9 @@ class LPVisualizer:
 
         self.vertices = []
         i = 1
+        #draw constraints
         for a, sign, b in constraints:
-            all_colors = ['b', 'g', 'r','blue' , 'c','y','k' ]
+            all_colors = ['b', 'g','blue' , 'c','y','k' ]
             
             color = all_colors[i]
             a1, a2 = int(a[0]) , int(a[1])
@@ -202,7 +230,16 @@ class LPVisualizer:
                 intersect &= (a1 * x_grid + a2 * y_grid == rhs)
 
         plt.imshow( intersect.astype(int) , extent=(x_grid.min(),x_grid.max(),y_grid.min(),y_grid.max()),origin="lower", cmap="Greys", alpha = 0.3)        
+        #draw obj line 
+        
+        obj_coeffs = [v.get() for v in self.objective_coeffs]
+        if self.current_point:
+            y_obj = (self.current_point[0] * obj_coeffs[0] + self.current_point[1] * obj_coeffs[1] - obj_coeffs[0] * x)/obj_coeffs[1]
+            self.ax.plot(x, y_obj, color= 'r')
+       
 
+
+        # search interseption points
         for comb in itertools.combinations(constraints, 2):
             a_coefs1, _ , b_coef1 = comb[0] 
             a_coefs2, _ , b_coef2 = comb[1]
@@ -210,7 +247,6 @@ class LPVisualizer:
             rhs1 = b_coef1 - sum(ak * vk.get() for ak, vk in zip(a_coefs1[2:], self.fixed_values))
             rhs2 = b_coef2 - sum(ak * vk.get() for ak, vk in zip(a_coefs2[2:], self.fixed_values))
             b_vec = np.array([rhs1, rhs2])
-            # search interseption points
             if np.linalg.matrix_rank(A) == 2:
                 try:
                     sol = np.linalg.solve(A, b_vec)
@@ -241,7 +277,85 @@ class LPVisualizer:
                 return False
             if sign == "=" and abs(lhs - b) > 1e-8:
                 return False
-        return True       
+        return True      
+
+
+    def solve(self):
+        self.manual_mode = False
+        self.plot_constraints()
+        if not self.vertices:
+            self.info_label.config(text="Нет допустимых вершин")
+            return
+        coeffs = [v.get() for v in self.objective_coeffs]
+        values = []
+        for v in self.vertices:
+            full_point = list(v) + [vk.get() for vk in self.fixed_values]
+            z = sum(c * x for c, x in zip(coeffs, full_point))
+            values.append((z, v))
+        best = max(values) if self.mode.get() == "Максимум" else min(values)
+        self.current_point = best[1]
+        self.update_info()
+        self.plot_constraints() 
+
+    def start_manual_mode(self):
+        self.manual_mode = True
+        self.plot_constraints()
+        if not self.vertices:
+            self.info_label.config(text="Нет допустимых вершин")
+            return
+            
+        if len(self.vertices) == 1:
+            self.current_point = self.vertices[0]
+            full_point = list(self.current_point) + [vk.get() for vk in self.fixed_values]
+            z = sum(c.get() * x for c, x in zip(self.objective_coeffs, full_point))
+            point_str = ", ".join(f"{x:.2f}" for x in full_point)
+            self.info_label.config(text=f"x = ({point_str})\nЦелевая функция = {z:.2f}")
+            self.plot_constraints()
+            return
+            
+        if len(self.vertices) == 2:
+            self.edge_path = self.vertices
+            self.edge_index = 0
+            self.current_point = self.edge_path[0]
+            self.update_info()
+            self.plot_constraints()
+            return
+            
+        poly = Polygon(self.vertices)
+        if not poly.is_valid:
+            poly = poly.convex_hull
+        self.edge_path = list(poly.exterior.coords)[:-1]
+        self.edge_index = 0
+        self.current_point = self.edge_path[0]
+        self.update_info()
+        self.plot_constraints()    
+
+    def update_info(self):
+        if not self.current_point:
+            self.info_label.config(text="Решение не найдено")
+        else:
+            full_point = list(self.current_point) + [vk.get() for vk in self.fixed_values]
+            z = sum(c.get() * x for c, x in zip(self.objective_coeffs, full_point))
+            point_str = ", ".join(f"{x:.2f}" for x in full_point)
+            self.info_label.config(text=f"x = ({point_str})\nЦелевая функция = {z:.2f}")    
+    
+
+    def reset_all(self):
+        for frame, *_ in self.constraints_widgets:
+            frame.destroy()
+        self.constraints_widgets.clear()
+
+        self.extra_var_count.set(0)
+        self.update_objective_entries()
+
+        self.vertices.clear()
+        self.current_point = None
+        self.manual_mode = False
+        self.edge_path.clear()
+        self.info_label.config(text="Решение не найдено")
+        self.plot_constraints()   
+
+    
 
     def on_scroll(self, event):
         base_scale = 1.1
@@ -269,7 +383,25 @@ class LPVisualizer:
 
         ax.set_xlim(new_xlim)
         ax.set_ylim(new_ylim)
-        self.canvas.draw()     
+        self.canvas.draw()   
+
+    def new_problem(self):
+        if self.main_frame:
+            self.main_frame.destroy()
+            
+        self.setup_screen = ttk.Frame(self.root)
+        self.setup_screen.pack(padx=20, pady=20)
+        
+        ttk.Label(self.setup_screen, text="Введите количество переменных:", font=("Arial", 12)).pack(pady=10)
+        
+        self.var_count_input = tk.IntVar(value=2)
+        var_selector = ttk.Spinbox(self.setup_screen, from_=1, to=10, textvariable=self.var_count_input, width=5)
+        var_selector.pack(pady=10)
+        
+        self.use_visualization = tk.BooleanVar(value=True)
+        ttk.Checkbutton(self.setup_screen, text="С отрисовкой", variable=self.use_visualization).pack(pady=5)
+        
+        ttk.Button(self.setup_screen, text="Продолжить", command=self.initialize_solver).pack(pady=10) 
 
 if __name__ == "__main__":
     root = tk.Tk()
