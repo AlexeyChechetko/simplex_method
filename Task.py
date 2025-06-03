@@ -13,21 +13,48 @@ class Task:
         self.c = c
         self.system_of_constraints = SystemOfConstraints(constraints)
 
-def make_task_canonical(task: Task) -> Task:
+def make_task_canonical(task: Task):
     """
     Переделывает задачу в каноническую путем добавления переменных
     """
-    pass
+    for i in task.system_of_constraints.indices_of_non_good_constraints:
+        if task.system_of_constraints.constraints[i].type_of_ineq != "=":
+            not_equal_add_variable(task, i)
+    for j in task.system_of_constraints.indices_of_non_good_variables:
+        non_good_variable_add_variable(task, j)
+
+def not_equal_add_variable(task: Task, i: int):
+    for index_of_non_good_constraint in range(len(task.system_of_constraints.indices_of_non_good_constraints)):
+        task.system_of_constraints.A[index_of_non_good_constraint].append(0.0) # TODO изменить тип ограничения на "="
+    task.system_of_constraints.A[i][-1]=-1.0
+
+def non_good_variable_add_variable(task: Task, index_of_non_good_variable: int):
+    for index_of_non_good_constraint in range(len(task.system_of_constraints.indices_of_non_good_constraints)):
+        task.system_of_constraints.A[index_of_non_good_constraint].append(-task.system_of_constraints.A[index_of_non_good_constraint][index_of_non_good_variable])
 
 if __name__ == "__main__":
-    list_ex = [
-        [1, 2, 3],
-        [4, 5 ,6],
-        [7, 8, 9],
-    ]
+    # Первое ограничение
+    coefficients_ex1 = [1, 0, -3]
+    b_ex1 = 4
+    type_of_ineq_ex1 = ">="
 
-    print(list_ex[1:2][0])
+    Constraint_instance1 = Constraint(coefficients_ex1, b_ex1, type_of_ineq_ex1)
 
-    numpy_list_ex = np.array(list_ex)
-    numpy_list_ex[:, -1] = np.array([1, 2, 3])
-    print(numpy_list_ex)
+    # Второе ограничение
+    coefficients_ex2 = [0, 0, -3]
+    b_ex2 = 1
+    type_of_ineq_ex2 = "="
+
+    Constraint_instance2 = Constraint(coefficients_ex2, b_ex2, type_of_ineq_ex2)
+
+    # Третье ограничение
+    coefficients_ex3 = [0, 0, -3]
+    b_ex3 = 0
+    type_of_ineq_ex3 = "<="
+
+    Constraint_instance3 = Constraint(coefficients_ex3, b_ex3, type_of_ineq_ex3)
+
+    task_instance = Task(3, [1, 2, 3], [Constraint_instance1, Constraint_instance2, Constraint_instance3])
+
+    make_task_canonical(task_instance)
+    print(task_instance.system_of_constraints)

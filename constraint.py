@@ -64,7 +64,7 @@ if __name__ == "__main__":
     # Пример 2
     coefficients_ex2 = [0, 0, -3]
     b_ex2 = 0
-    type_of_ineq_ex2 = "<="
+    type_of_ineq_ex2 = "=" # TODO: вот такие неравенства считает "хорошими" (0)*x1 + (0)*x2 + (-3)*x3 = 0, но они в целом смысла не несут. Можно считать, что они не вводятся
 
     Constraint_instance2 = Constraint(coefficients_ex2, b_ex2, type_of_ineq_ex2)
     print(Constraint_instance2)
