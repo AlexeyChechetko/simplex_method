@@ -1,4 +1,4 @@
-import numpy as np
+# import numpy as np
 from constraint import Constraint
 from system_of_constraints import SystemOfConstraints
 
@@ -26,7 +26,8 @@ def make_task_canonical(task: Task):
 def not_equal_add_variable(task: Task, i: int):
     for index_of_non_good_constraint in range(len(task.system_of_constraints.indices_of_non_good_constraints)):
         task.system_of_constraints.A[index_of_non_good_constraint].append(0.0) # TODO изменить тип ограничения на "="
-    task.system_of_constraints.A[i][-1]=-1.0
+        task.system_of_constraints.constraints[index_of_non_good_constraint].type_of_ineq = "="
+    task.system_of_constraints.A[i][-1]=1.0
 
 def non_good_variable_add_variable(task: Task, index_of_non_good_variable: int):
     for index_of_non_good_constraint in range(len(task.system_of_constraints.indices_of_non_good_constraints)):
