@@ -41,9 +41,11 @@ class SystemOfConstraints:
         Проверяет каждое неравенство в системе.
         Если встретили неравенство типа (-1)*x_i <= 0, то удаляем из массива self.indices_of_non_good_variables индекс i
         """
+        count_of_good_constraints = 0
         for i, constraint in enumerate(self.constraints):
             variable_index = constraint.check_constraint()
             if variable_index != -1: # Если ограничение типа (-1)*x_i <= 0
+                count_of_good_constraints += 1
                 self.indices_of_non_good_variables.pop(variable_index)
                 self.indices_of_non_good_constraints.pop(i)
 

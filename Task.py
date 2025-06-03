@@ -23,6 +23,9 @@ def make_task_canonical(task: Task):
     for j in task.system_of_constraints.indices_of_non_good_variables:
         non_good_variable_add_variable(task, j)
 
+    for n in range(len(task.system_of_constraints.indices_of_non_good_constraints + task.system_of_constraints.indices_of_non_good_variables) - 1):
+        task.c.append(0)
+
 def not_equal_add_variable(task: Task, i: int):
     for index_of_non_good_constraint in range(len(task.system_of_constraints.indices_of_non_good_constraints)):
         task.system_of_constraints.A[index_of_non_good_constraint].append(0.0) # TODO изменить тип ограничения на "="
@@ -42,7 +45,7 @@ if __name__ == "__main__":
     Constraint_instance1 = Constraint(coefficients_ex1, b_ex1, type_of_ineq_ex1)
 
     # Второе ограничение
-    coefficients_ex2 = [0, 0, -3]
+    coefficients_ex2 = [0, 0, 3]
     b_ex2 = 1
     type_of_ineq_ex2 = "="
 
@@ -59,3 +62,4 @@ if __name__ == "__main__":
 
     make_task_canonical(task_instance)
     print(task_instance.system_of_constraints)
+    print(task_instance.c)
