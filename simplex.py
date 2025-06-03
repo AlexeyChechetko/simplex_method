@@ -12,7 +12,9 @@ def simplex(task: Task):
 
     tableau = to_tableau(c, A, b)
 
-    while can_be_improved(tableau):
+    i = 0
+    while can_be_improved(tableau) and i < 10:
+        i += 1
         pivot_position = get_pivot_position(tableau)
         tableau = pivot_step(tableau, pivot_position)
 
@@ -28,36 +30,23 @@ def can_be_improved(tableau):
     return any(x > 0 for x in z[:-1])
 
 def get_pivot_position(tableau):
-    """
-    Ищет строку, в которой t = t_min
-    """
+    z = tableau[-1]
+    column = next(i for i, x in enumerate(z[:-1]) if x > 0)
+    # column = max(((i, x) for i, x in enumerate(z[:-1]) if x > 0), key=lambda t: t[1])[0]
 
-    column = -1
-    z = tableau[-1] # Строка с коэффициентами целевой функции
-    indices_of_positive_elements = [i for i, x in enumerate(z[:-1]) if x > 0] # индекс последнего положительного элемента
+    restrictions = []
+    for eq in tableau[:-1]:
+        el = eq[column]
+        restrictions.append(math.inf if el <= 0 else eq[-1] / el)
 
-    for index_of_positive_element in indices_of_positive_elements:
-        # Проходимся по всем ограничениям и считаем t-шки
-        # Если они отрицательны или 0, то записываем бесконечность на их место
-        restrictions = []
-        for eq in tableau[:-1]:
-            el = eq[index_of_positive_element]
-            restrictions.append(math.inf if el <= 0 else eq[-1] / el)
-        row = restrictions.index(min(restrictions))
-
-        if restrictions[row] != math.inf:
-            column = index_of_positive_element
-            return row, column
-
-    return -1, -1
+    row = restrictions.index(min(restrictions))
+    return row, column
 
 def pivot_step(tableau, pivot_position):
     new_tableau = [[] for eq in tableau]
 
     i, j = pivot_position
-    print("pivot_position =", pivot_position, "\n")
     pivot_value = tableau[i][j]
-    print("pivot_value =", pivot_value, "\n")
     new_tableau[i] = np.array(tableau[i]) / pivot_value
 
     for eq_i, eq in enumerate(tableau):
@@ -81,7 +70,6 @@ def get_solution(tableau):
         solutions.append(solution)
 
     return solutions
-
 if __name__ == "__main__":
     # Первое ограничение
     coefficients_ex1 = [1, -4]
@@ -104,23 +92,10 @@ if __name__ == "__main__":
 
     Constraint_instance3 = Constraint(coefficients_ex3, b_ex3, type_of_ineq_ex3)
 
-    # Четвертое ограничение
-    coefficients_ex4 = [1, 0]
-    b_ex4 = 0
-    type_of_ineq_ex4 = ">="
-
-    Constraint_instance4 = Constraint(coefficients_ex4, b_ex4, type_of_ineq_ex4)
-
-    # Пятое ограничение
-    coefficients_ex5 = [0, 1]
-    b_ex5 = 0
-    type_of_ineq_ex5 = ">="
-
-    Constraint_instance5 = Constraint(coefficients_ex5, b_ex5, type_of_ineq_ex5)
-
-    task_instance = Task(2, [-1, -1], [Constraint_instance1, Constraint_instance2, Constraint_instance3, Constraint_instance4, Constraint_instance5])
+    task_instance = Task(2, [-1, -1], [Constraint_instance1, Constraint_instance2, Constraint_instance3])
 
     make_task_canonical(task_instance)
     print(task_instance.system_of_constraints)
 
-    # print(simplex(task_instance))
+    ans = simplex(task_instance)
+    print(ans)
