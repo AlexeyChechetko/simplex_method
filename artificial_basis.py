@@ -20,20 +20,27 @@ def add_variables(task: Task):
 
 if __name__ == "__main__":
     # Первое ограничение
-    coefficients_ex1 = [1, -1]
-    b_ex1 = -2
-    type_of_ineq_ex1 = ">="
+    coefficients_ex1 = [1, -4]
+    b_ex1 = 4
+    type_of_ineq_ex1 = "<="
 
     Constraint_instance1 = Constraint(coefficients_ex1, b_ex1, type_of_ineq_ex1)
 
     # Второе ограничение
-    coefficients_ex2 = [-1, -1]
-    b_ex2 = -4
+    coefficients_ex2 = [3, -1]
+    b_ex2 = 0
     type_of_ineq_ex2 = ">="
 
     Constraint_instance2 = Constraint(coefficients_ex2, b_ex2, type_of_ineq_ex2)
 
-    task_instance = Task(2, [-1, 4], [Constraint_instance1, Constraint_instance2])
+    # Третье ограничение
+    coefficients_ex3 = [1, 1]
+    b_ex3 = 4
+    type_of_ineq_ex3 = ">="
+
+    Constraint_instance3 = Constraint(coefficients_ex3, b_ex3, type_of_ineq_ex3)
+
+    task_instance = Task(2, [1, 1], [Constraint_instance1, Constraint_instance2, Constraint_instance3])
     make_task_canonical(task_instance)
 
     #add_variables(task_instance)
